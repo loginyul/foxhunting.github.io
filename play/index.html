@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Fox Hunting</title>
+  <style>
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#2063da; }
+    #game, canvas { width:100%; height:100%; display:block; }
+    canvas { outline:none; touch-action:none; }
+    body { user-select:none; -webkit-user-select:none; }
+    #loading { position:fixed; inset:0; display:grid; place-content:center; gap:16px;
+      font:20px system-ui,sans-serif; color:white; text-align:center; }
+    progress { width:240px; accent-color:#ffce70; }
+    #error { position:fixed; inset:20%; padding:24px; background:white; color:#b3261e;
+      font:16px system-ui,sans-serif; white-space:pre-wrap; overflow:auto; }
+    #error[hidden], #loading[hidden] { display:none; }
+  </style>
+</head>
+<body>
+  <div id="game"><canvas id="unity-canvas" tabindex="0" aria-label="Fox Hunting"></canvas></div>
+  <div id="loading"><span>Fox Hunting</span><progress max="1" value="0" aria-label="Loading"></progress></div>
+  <div id="error" role="alert" hidden></div>
+  <script src="fox-config.js"></script>
+  <script src="fox-platform.js"></script>
+  <script>
+    const canvas = document.getElementById('unity-canvas');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    function showError(message) {
+      loading.hidden = true;
+      error.textContent = String(message);
+      error.hidden = false;
+    }
+    if (location.protocol === 'file:') {
+      showError(navigator.language.toLowerCase().startsWith('ru')
+        ? 'Веб-игру нужно открыть через HTTP-сервер, а не двойным щелчком по index.html.\n\nВ папке проекта запустите Tools/Preview-Web.cmd и оставьте его окно открытым.\nИли используйте Build And Run для Web в Unity.\n\nДля сайта загрузите всю Web-сборку, включая папку Build.'
+        : 'This Web game needs an HTTP server; opening index.html directly is not supported.\n\nIn the project, run Tools/Preview-Web.cmd and keep its window open, or use Web Build And Run in Unity.\n\nFor hosting, upload the complete Web build, including the Build folder.');
+    } else {
+    const config = {
+      dataUrl: 'Build/Web.data.unityweb',
+      frameworkUrl: 'Build/Web.framework.js.unityweb',
+      codeUrl: 'Build/Web.wasm.unityweb',
+      streamingAssetsUrl: 'StreamingAssets',
+      companyName: "Yull",
+      productName: "Fox Hunting",
+      productVersion: "1.3",
+      fullscreenElementID: 'game',
+      autoSyncPersistentDataPath: true,
+      showBanner: (message, type) => { if (type === 'error') showError(message); else console.warn(message); }
+    };
+    const loader = document.createElement('script');
+    loader.src = 'Build/Web.loader.js';
+    loader.onerror = () => showError('Could not load the game. Please reload this page.');
+    loader.onload = () => createUnityInstance(canvas, config, progress => {
+      loading.querySelector('progress').value = progress;
+    }).then(player => { FoxPlatform.attach(player); canvas.focus(); }).catch(showError);
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
+    FoxPlatform.initialize().then(() => document.body.appendChild(loader)).catch(showError);
+    }
+  </script>
+</body>
+</html>
